@@ -12,13 +12,22 @@ import {
   import * as Yup from 'yup'
   import { Formik } from 'formik';
 import { LoginFormValues } from './type';
+import jwt_decode, { jwtDecode } from "jwt-decode"
+// import { postApi } from '../../axiosconfig/apihelper';
+
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../../App';
+import { loginScreenStyle } from './style';
 import { postApi } from '../../axiosconfig/apihelper';
+import { getData, storeData } from '../../utils/storage';
+import { CommonActions } from '@react-navigation/native';
+import { useDispatch } from 'react-redux';
 
-  
 
+type LoginProps = NativeStackScreenProps<RootStackParamList,'LoginScreen'>
 
   export const loginValidationSchema = Yup.object().shape({
-    email: Yup
+    username: Yup
       .string()
       .email('Invalid email format')
       .required('Email is required'),
@@ -26,10 +35,10 @@ import { postApi } from '../../axiosconfig/apihelper';
       .string()
       .required('Password is required')
   });
-  export const LoginScreen = () => {
+  export const LoginScreen = ({navigation}: LoginProps) => {
+    const dispatch = useDispatch();
     const [isPasswordVisible, setPasswordVisibility] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+
 
   
     const togglePasswordVisibility = () => {
@@ -40,19 +49,32 @@ import { postApi } from '../../axiosconfig/apihelper';
 
     const handleLogin = async (values:LoginFormValues) => {
         try {
-          console.warn(values)
-          const data = await postApi( 'https://api.escuelajs.co/api/v1/auth/login',  values);
-          console.warn('Login successful:', data);
+  
+          const response = await postApi( 'login',  values);
+          console.warn('Login successful:', response.data.token);
+         
+          saveData(response.data.token)
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'Home' }],
+            })
+          );
+
           // Handle successful login
         } catch (error) {
           console.error('Login failed:', error);
         }
       };
 
-    return (
+      const saveData = async (values: string) => {
+        await storeData('token',values );
+      };
+    
 
+    return (
     <Formik
-      initialValues={{ email: '', password: '' }}
+      initialValues={{ username: '', password: '' }}
       validationSchema={loginValidationSchema}
       onSubmit={handleLogin}>
       {({ handleChange, handleBlur, handleSubmit, values, errors, touched,isSubmitting }) => (
@@ -74,13 +96,13 @@ import { postApi } from '../../axiosconfig/apihelper';
           style={loginScreenStyle.input}
           placeholder=" Enter Email"
          // onChangeText={text => setEmail(text)}
-          onChangeText={handleChange('email')}
-          value={values.email}
-          onBlur={handleBlur('email')}
+          onChangeText={handleChange('username')}
+          value={values.username}
+          onBlur={handleBlur('username')}
         />
        
        </View>
-{isSubmitting || errors.email ? <Text style={loginScreenStyle.errorText}>{errors.email}</Text> : null}
+{isSubmitting || errors.username ? <Text style={loginScreenStyle.errorText}>{errors.username}</Text> : null}
    
 <View style={loginScreenStyle.textContainer}>
 <View style={loginScreenStyle.passwordContainer}>
@@ -111,6 +133,10 @@ import { postApi } from '../../axiosconfig/apihelper';
     <View style={loginScreenStyle.textContainer}>   
     <TouchableOpacity style={loginScreenStyle.button}
      onPress={handleSubmit as any}
+    //  onPress={()=> {navigation.push('Home')
+    //   saveData(values);
+    //  }}
+    
      >
           <Text style={loginScreenStyle.buttonText}>Login</Text>
         </TouchableOpacity>
@@ -121,97 +147,6 @@ import { postApi } from '../../axiosconfig/apihelper';
     );
   };
   
-  const loginScreenStyle = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#FFFFFF',
-     // alignItems: 'center',
-      paddingTop: 50, // Additional space at the top for SafeArea
-    },
-    imageContainer: {
-      flex: 1,
-     // justifyContent: 'center',
-      alignItems: 'center',
-      marginTop: 70, // Adjust this value to fine-tune the vertical position of the image
-    },
-    image: {
-      height: 100,
-      width: 100,
-      borderRadius: 50, // Optional: Makes the image circular
-    },
-    textContainer: {
-      alignItems: 'center',
-      marginBottom: 10,
-    },
-    baseText: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      paddingTop: 10,
-    },
-    innerText: {
-      fontSize: 20,
-      color: 'grey',
-      fontWeight: '600',
-      paddingTop: 10,
-      paddingBottom: 20,
-    },
-    errorText: {
-    fontSize: 14,
-    color: 'red',
-    fontWeight: '400',
-    paddingHorizontal: 25,
-    textAlign: 'left',
-      },
-    input: {
-      width: '90%',
-      height: 60,
-      marginTop: 20,
-      backgroundColor: '#F2F2F2',
-      padding: 20,
-      borderRadius: 10,
-      
-    },
-    passwordInput: {
-        flex: 1,
-        height: 60,
-        backgroundColor: '#F2F2F2',
-        paddingHorizontal: 20,
-        borderRadius: 10,
-    },
-    passwordContainer:{
-     width: '90%',
-     marginTop: 10,
-    },
-    inputWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        position: 'relative',
-      },
-    suffixIcon: {
-        position: 'absolute',
-        right: 10,
-        top: '50%',
-        transform: [{ translateY: -12 }], 
-      },
-    eyeIcon: {
-      width: 20,
-      height: 20,
-    },
-    button: {
-      width: '90%',
-      height: 60,
-      margin: 40,
-      padding: 15,
-      alignItems: 'center',
-      backgroundColor: '#5800EB',
-      borderRadius: 10,
-    },
-    buttonText: {
-      fontSize: 20,
-      fontWeight: 'bold',
-      color: 'white',
-    },
-  });
-  
+
 
  
