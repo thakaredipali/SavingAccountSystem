@@ -1,8 +1,9 @@
-import { CUCTOMER_LIST, USER_DATA } from "../../constant/constants"
+import { ACCOUNT_DETAILS, CUCTOMER_LIST, USER_DATA } from "../../constant/constants"
+import { AccountDetails } from "../../screens/Customer/Dashboard/type";
 import { Iaction } from "./types"
 
 
-const initialState: any= []
+
 export const CustomerReducer = (state = [], action: Iaction) => {
     switch(action.type) {
         case CUCTOMER_LIST:
@@ -22,3 +23,4 @@ export const UserDataReducer = (state = [], action: Iaction) => {
             return state;
     }
 };
+

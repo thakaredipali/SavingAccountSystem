@@ -10,6 +10,8 @@ import {
 import { getData, storeData } from '../utils/storage';
 import { jwtDecode } from 'jwt-decode';
 import { LoginUserData } from '../screens/login/type';
+import Toast from 'react-native-simple-toast';
+
 
 
 
@@ -23,24 +25,32 @@ import { LoginUserData } from '../screens/login/type';
 
   });
 
+
+
   //GET METHOD
 
   export async function getApi(
         reqPath: string,
         payload: any
     ) {
+      try {
         const response = await axiosInstance.request({
-        url: reqPath,
-        method: GET_METHOD,
-        params: payload,
-        
+          url: reqPath,
+          method: GET_METHOD,
+          params: payload,
         });
         return response;
+      } catch (error: any) {
+        console.error('GET API Error:', error?.response?.data || error.message);
+        Toast.show('Something went wrong', Toast.LONG);   
+        throw error; // Re-throw the error if you want to handle it later
+      }
     }
+
 
   //POST Method
     export const postApi = async (reqPath: string, payload: any) => {
-      console.log(payload)
+      try {
         const response = await axiosInstance.request({
         url: reqPath,
         method: POST_METHOD,
@@ -50,19 +60,31 @@ import { LoginUserData } from '../screens/login/type';
         }
         });
         return response;
+      }  catch (error: any) {
+       // console.error('Post API Error:', error?.response?.data || error.message);
+        Toast.show(error.response.data.error_description || 'Something went wrong', Toast.LONG);
+        throw error;
+      }
+
     };
 
   //PUT Method
     export const putApi = async (reqPath:string, payload: any) => {
+      try {
         const response = await axiosInstance.request({
-        url: reqPath,
-        method: PUT_METHOD,
-        data: payload,
-        headers: {
+          url: reqPath,
+          method: PUT_METHOD,
+          data: payload,
+          headers: {
             ...defaultHeaders
-        }
+          }
         });
         return response;
+      } catch (error: any) {
+        console.error('PUT API Error:', error?.response?.data || error.message);
+        Toast.show(error.response.data.error_description || 'Something went wrong', Toast.LONG);
+        throw error;
+      }
     };
 
 //     //PATCH Method
@@ -94,11 +116,12 @@ export const patchApi = async (reqPath: string, payload: any) => {
   // adding the default query params required for all API's
     axiosInstance.interceptors.request.use(async (config: any) => {
       const token = await getData('token');
+      if(token){
       const decoded: LoginUserData = jwtDecode(token??'');
       const jsonValue = JSON.stringify(decoded); 
       await storeData('user', jsonValue);
-      const storedUserData = await getData('user');
-
+      }
+      
         config.headers = {
         ...config.headers,
         Authorization: token
@@ -109,18 +132,13 @@ export const patchApi = async (reqPath: string, payload: any) => {
     //interceptor for showing toast notifications on global level
     axiosInstance.interceptors.response.use(
     res => {
-        // toast.success(res?.data?.msg);
-        console.log("errorttttt",res);
+        console.log("error",res);
         return res;
     },
     error => {
-      //console.log("errorttttt",error);
+      console.log("error",error?.response?.status);
         if (error?.response?.status === 401) {
-       // localStorage.clear();
         }
-        // toast.error(
-        // `${error?.response?.data?.message}` || 'Oops, something went wrong!'
-        // );
         return Promise.reject(error);
     }
     );

@@ -11,9 +11,9 @@ import {
   import { useState } from 'react';
   import * as Yup from 'yup'
   import { Formik } from 'formik';
-import { LoginFormValues } from './type';
+import { LoginFormValues, LoginUserData } from './type';
 import jwt_decode, { jwtDecode } from "jwt-decode"
-// import { postApi } from '../../axiosconfig/apihelper';
+import Toast from 'react-native-simple-toast';
 
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../App';
@@ -51,19 +51,27 @@ type LoginProps = NativeStackScreenProps<RootStackParamList,'LoginScreen'>
         try {
   
           const response = await postApi( 'login',  values);
-          console.warn('Login successful:', response.data.token);
-         
+          Toast.show('Login successful!', Toast.SHORT);
           saveData(response.data.token)
+          storeData('loginData',values.password)
+          const storedUserData: LoginUserData = jwtDecode(response.data.token??'');
+          if(storedUserData && storedUserData.Role == 'customer'){
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Dashboard' }],
+              })
+            );
+          }else{           
           navigation.dispatch(
             CommonActions.reset({
               index: 0,
               routes: [{ name: 'Home' }],
             })
           );
-
-          // Handle successful login
-        } catch (error) {
-          console.error('Login failed:', error);
+        }
+        } catch (error: any) {
+          Toast.show(error.response.data.error_description || 'Login failed!', Toast.LONG);
         }
       };
 

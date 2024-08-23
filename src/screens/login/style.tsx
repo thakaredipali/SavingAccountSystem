@@ -4,17 +4,17 @@ export const loginScreenStyle = StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: '#FFFFFF',
-      paddingTop: 50, // Additional space at the top for SafeArea
+      paddingTop: 50,
     },
     imageContainer: {
      // flex: 1,
       alignItems: 'center',
-      marginTop: 70, // Adjust this value to fine-tune the vertical position of the image
+      marginTop: 70, 
     },
     image: {
       height: 100,
       width: 100,
-      borderRadius: 50, // Optional: Makes the image circular
+      borderRadius: 50, 
     },
     textContainer: {
       alignItems: 'center',

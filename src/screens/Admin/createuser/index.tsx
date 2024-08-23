@@ -1,15 +1,20 @@
-import React, { useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Text, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, TextInput, Button, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Field, Formik } from 'formik';
 import * as Yup from 'yup';
-import { postApi, putApi } from '../axiosconfig/apihelper';
-import { UserData } from '../screens/createuser/type';
+
 import { Dropdown } from 'react-native-element-dropdown';
+import Toast from 'react-native-simple-toast';
 import { CommonActions, useNavigation } from '@react-navigation/native';
+import { BranchOption, CreateAccountValues, CreateUserValues, UserData } from './type';
+import { getApi, postApi, putApi } from '../../../axiosconfig/apihelper';
+import { Branch } from '../ViewBranches/type';
+import { createUserStyles } from './styles';
 
 // Validation schema for Create Customer form
 const customerValidationSchema = Yup.object().shape({
-  name: Yup.string().required('Name is required'),
+  name: Yup.string() .required('Name is required')
+  .matches(/^[A-Za-z ]+$/, 'Only letters are allowed, without numbers or special characters'),
   mobile: Yup.string().required('Mobile is required').matches(/^[0-9]+$/, 'Mobile number must be digits only'),
   email: Yup.string().email('Invalid email address').required('Email is required'),
   address: Yup.string().required('Address is required'),
@@ -17,15 +22,14 @@ const customerValidationSchema = Yup.object().shape({
 
 // Validation schema for Create Account form
 const accountValidationSchema = Yup.object().shape({
-  user_id: Yup.number().required('User ID is required'),
   branch_id: Yup.number().required('Branch ID is required'),
   acc_type: Yup.string().required('Account type is required'),
   balance: Yup.number().required('Balance is required').min(0, 'Balance must be at least 0'),
 });
 
-const CreateCustomer = ({ onNext, savedValues }: { onNext: (values: any) => void; savedValues: any }) => (
-  <ScrollView contentContainerStyle={styles.container}>
-    <Text style={styles.heading}>Create Customer</Text>
+const CreateCustomer = ({ onNext, savedValues }: { onNext: (values: CreateUserValues) => void; savedValues: CreateUserValues }) => (
+  <ScrollView contentContainerStyle={createUserStyles.container}>
+    <Text style={createUserStyles.heading}>Create Customer</Text>
     <Formik
       initialValues={{
         name: savedValues?.name || '',
@@ -45,50 +49,50 @@ const CreateCustomer = ({ onNext, savedValues }: { onNext: (values: any) => void
     >
       {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
         <View>
-          <Text style={styles.label}>Name</Text>
+          <Text style={createUserStyles.label}>Name</Text>
           <TextInput
-            style={styles.input}
+            style={createUserStyles.input}
             onChangeText={handleChange('name')}
             onBlur={handleBlur('name')}
             value={values.name}
             placeholder="Name"
           />
-          {touched.name && errors.name && <Text style={styles.errorText}>{String( errors.name)}</Text>}
+          {touched.name && errors.name && <Text style={createUserStyles.errorText}>{String( errors.name)}</Text>}
           
-          <Text style={styles.label}>Mobile</Text>
+          <Text style={createUserStyles.label}>Mobile</Text>
           <TextInput
-            style={styles.input}
+            style={createUserStyles.input}
             onChangeText={handleChange('mobile')}
             onBlur={handleBlur('mobile')}
             value={values.mobile}
             placeholder="Mobile"
             keyboardType="phone-pad"
           />
-          {touched.mobile && errors.mobile && <Text style={styles.errorText}>{String (errors.mobile)}</Text>}
+          {touched.mobile && errors.mobile && <Text style={createUserStyles.errorText}>{String (errors.mobile)}</Text>}
           
-          <Text style={styles.label}>Email</Text>
+          <Text style={createUserStyles.label}>Email</Text>
           <TextInput
-            style={styles.input}
+            style={createUserStyles.input}
             onChangeText={handleChange('email')}
             onBlur={handleBlur('email')}
             value={values.email}
             placeholder="Email"
             keyboardType="email-address"
           />
-          {touched.email && errors.email && <Text style={styles.errorText}>{String(errors.name)}</Text>}
+          {touched.email && errors.email && <Text style={createUserStyles.errorText}>{String(errors.email)}</Text>}
           
-          <Text style={styles.label}>Address</Text>
+          <Text style={createUserStyles.label}>Address</Text>
           <TextInput
-            style={styles.input}
+            style={createUserStyles.input}
             onChangeText={handleChange('address')}
             onBlur={handleBlur('address')}
             value={values.address}
             placeholder="Address"
           />
-          {touched.address && errors.address && <Text style={styles.errorText}>{String(errors.address)}</Text>}
+          {touched.address && errors.address && <Text style={createUserStyles.errorText}>{String(errors.address)}</Text>}
 
-          <TouchableOpacity style={styles.button} onPress={handleSubmit as any}>
-            <Text style={styles.buttonText}>Next</Text>
+          <TouchableOpacity style={createUserStyles.button} onPress={handleSubmit as any}>
+            <Text style={createUserStyles.buttonText}>Next</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -101,19 +105,41 @@ const CreateCustomer = ({ onNext, savedValues }: { onNext: (values: any) => void
 
 
 
-const CreateAccount = ({ onBack, onSubmit, savedValues }: { onBack: () => void; onSubmit: (values: any) => void; savedValues: any }) => {
+export const CreateAccount = ({ onBack, onSubmit }: { onBack: () => void; onSubmit: (values: CreateAccountValues) => void; savedValues?: CreateAccountValues }) => {
   
-  //const [accType, setAccType] = useState(savedValues?.acc_type || '');
+
+
+
+  const [branches, setBranches] = useState<BranchOption[]>([]);
 
   const accountTypes = [
     { label: 'Savings', value: 'Savings' },
     { label: 'Current', value: 'Current' },
   ];
+
+  useEffect(() => {
+    const fetchData = async () => {
+        try {
+            const response = await getApi('admin/branch_list', {});
+            const branchesData: BranchOption[] = response.data.map((item: any) => ({
+            label: item.branch_id, 
+            value: item.branch_id, 
+          }));
+          setBranches(branchesData)
+        } catch (err) {
+            console.log('Error fetching data:', err);
+        }
+    };
+    fetchData();
+}, []);
+
+
+  
   return (
-  <ScrollView contentContainerStyle={styles.container}>
+  <ScrollView contentContainerStyle={createUserStyles.container}>
+        <Text style={createUserStyles.heading}>Create Account</Text>
     <Formik
          initialValues={{
-          user_id: '',
           branch_id: '',
           acc_type: '',
           balance: '',
@@ -122,7 +148,6 @@ const CreateAccount = ({ onBack, onSubmit, savedValues }: { onBack: () => void; 
         onSubmit={(values) => {
           onSubmit({
             ...values,
-            user_id: Number(values.user_id),
             branch_id: Number(values.branch_id),
             balance: Number(values.balance),
           });
@@ -130,30 +155,23 @@ const CreateAccount = ({ onBack, onSubmit, savedValues }: { onBack: () => void; 
     >
       {({ handleChange, handleBlur, handleSubmit, values, errors, touched , setFieldValue}) => (
         <View>
-          <TextInput
-            style={styles.input}
-            onChangeText={handleChange('user_id')}
-            onBlur={handleBlur('user_id')}
-            value={values.user_id}
-            placeholder="User ID"
-            keyboardType="numeric"
-          />
-          {touched.user_id && errors.user_id && <Text style={styles.errorText}>{String(errors.user_id)  }</Text>}
-         
-         <Text style={styles.label}>Branch ID</Text>
-          <TextInput
-            style={styles.input}
-            onChangeText={handleChange('branch_id')}
-            onBlur={handleBlur('branch_id')}
-            value={values.branch_id}
-            placeholder="Branch ID"
-            keyboardType="numeric"
-          />
-          {touched.branch_id && errors.branch_id && <Text style={styles.errorText}>{String(errors.branch_id)}</Text>}
-           
-          <Text style={styles.label}>Select Account Type</Text>
+         <Text style={createUserStyles.label}>Branch ID</Text>
           <Dropdown
-              style={styles.input}
+              style={createUserStyles.input}
+              data={branches}
+              labelField="label"
+              valueField="value"
+              placeholder="Select Branch ID"
+              value={values.acc_type}
+              onChange={(item) => {
+                setFieldValue('branch_id', item.value);
+              }}
+            />
+          {touched.branch_id && errors.branch_id && <Text style={createUserStyles.errorText}>{String(errors.branch_id)}</Text>}
+           
+          <Text style={createUserStyles.label}>Select Account Type</Text>
+          <Dropdown
+              style={createUserStyles.input}
               data={accountTypes}
               labelField="label"
               valueField="value"
@@ -163,25 +181,25 @@ const CreateAccount = ({ onBack, onSubmit, savedValues }: { onBack: () => void; 
                 setFieldValue('acc_type', item.value);
               }}
             />
-            {touched.acc_type && errors.acc_type && <Text style={styles.errorText}>{String(errors.acc_type)}</Text>}
+            {touched.acc_type && errors.acc_type && <Text style={createUserStyles.errorText}>{String(errors.acc_type)}</Text>}
            
-          <Text style={styles.label}>Add Balance</Text>
+          <Text style={createUserStyles.label}>Add Balance</Text>
           <TextInput
-            style={styles.input}
+            style={createUserStyles.input}
             onChangeText={handleChange('balance')}
             onBlur={handleBlur('balance')}
             value={values.balance}
             placeholder="Balance"
             keyboardType="numeric"
           />
-          {touched.balance && errors.balance && <Text style={styles.errorText}>{String (errors.balance)}</Text>}
+          {touched.balance && errors.balance && <Text style={createUserStyles.errorText}>{String (errors.balance)}</Text>}
 
-          <TouchableOpacity style={styles.button} onPress={handleSubmit as any}>
-            <Text style={styles.buttonText}>Submit</Text>
+          <TouchableOpacity style={createUserStyles.button} onPress={handleSubmit as any}>
+            <Text style={createUserStyles.buttonText}>Submit</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.button, styles.backButton]} onPress={onBack}>
-            <Text style={styles.buttonText}>Back</Text>
+          <TouchableOpacity style={[createUserStyles.button, createUserStyles.backButton]} onPress={onBack}>
+            <Text style={createUserStyles.buttonText}>Back</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -191,16 +209,16 @@ const CreateAccount = ({ onBack, onSubmit, savedValues }: { onBack: () => void; 
 }
 
 
-const MainForm = () => {
+const AccountForm = () => {
   const navigation = useNavigation();
   const [showCustomerForm, setShowCustomerForm] = useState(true);
-  const [savedValues, setSavedValues] = useState<any>(null);
+  const [savedValues, setSavedValues] = useState<CreateUserValues | CreateAccountValues>();
   const [submitted, setSubmitted] = useState(false);
   const [userId, setUserId] = useState<number>();
   const [isNext, setIsNext] = useState(false);
 
 
-  const handleNext = async (values: any) => {
+  const handleNext = async (values: CreateUserValues) => {
     try {
       // Post data to API
       const data = {
@@ -210,7 +228,7 @@ const MainForm = () => {
       };
       if(!isNext){
       const response = await postApi('signup', data);
-      console.warn('Acccount created successful:', response.data);
+      Toast.show('Customer created successfully', Toast.SHORT);
       setIsNext(true)
       const user: UserData = response.data
       setUserId(user.user_id)
@@ -225,7 +243,7 @@ const MainForm = () => {
         };
         setSavedValues(values);
         const response = await putApi('admin/update_user', updateData);
-        console.warn('Updated successful:', response.data);
+
 
       }
       setShowCustomerForm(false);
@@ -237,9 +255,8 @@ const MainForm = () => {
   };
 
 
-  const handleSubmitButton = async (values: any) => {
+  const handleSubmitButton = async (values: CreateAccountValues) => {
     try {
-      console.log('yuyu',values)
       // Post data to API
       const data = {
         ...values,
@@ -247,20 +264,18 @@ const MainForm = () => {
         branch_id: Number(values.branch_id),
         balance: Number(values.balance),
       };
-      //if(!isNext){
       const response = await postApi('account/create', data);
-      console.warn('Bank successful:', response.data);
+      Toast.show('Acccount created successfully', Toast.SHORT);
       setIsNext(true)
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'Home' }], // Replace 'HomeScreen' with the name of your home screen
+          routes: [{ name: 'Home' }], 
         })
       );
       
       // Save form values and switch to CreateAccount form
       setSavedValues(values);
-    //  }
       setShowCustomerForm(false);
       setSubmitted(true);
       
@@ -279,68 +294,14 @@ const MainForm = () => {
   return (
     <View style={{ flex: 1 }}>
       {showCustomerForm ? (
-        <CreateCustomer onNext={handleNext} savedValues={savedValues} />
+        <CreateCustomer onNext={handleNext} savedValues={savedValues as CreateUserValues} />
       ) : (
-        <CreateAccount onBack={handleBack} onSubmit={handleSubmitButton} savedValues={savedValues} />
+        <CreateAccount onBack={handleBack} onSubmit={handleSubmitButton} savedValues={savedValues as CreateAccountValues} />
       )}
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: 20,
-    marginTop: 30,
-  },
-  input: {
-    height: 50,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 5,
-  },
-  heading: {
-    fontSize: 25,
-    fontWeight: 'bold',
-    marginBottom: 40,
-    textAlign: 'center', // Center the heading text
-  },
-  errorText: {
-    color: 'red',
-    fontSize: 12,
-    marginBottom: 10,
-  },
-  button: {
-    height: 50,
-    padding: 12,
-    marginTop: 20,
-    alignItems: 'center',
-    backgroundColor: '#5800EB',
-    borderRadius: 10,
-  },
-  buttonText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  backButton: {
-    backgroundColor: '#ccc',
-    marginTop: 10,
-  },
-  picker: {
-    height: 50,
-    borderColor: 'gray',
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-  },
-});
 
-export default MainForm;
+
+export default AccountForm;
